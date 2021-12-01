@@ -220,11 +220,11 @@ class DailyCrawler(object):
                     flush=True)  
 
 class Crawler(DailyCrawler):
-    def __init__(self,level='L1'):
+    def __init__(self):
         super(Crawler,self).__init__()
-        self.level = level    
-    def get_sw_list(self):
-        level = self.level
+        # self.level = None    
+    def get_sw_list(self,level):
+        
         for _ in range(3):
             try:
                 df = self.pro.index_classify(level=level, src='SW2021')
@@ -234,11 +234,13 @@ class Crawler(DailyCrawler):
             else:
                 return index_codes
 
-    def crawl_index_sw(self,begin_date=None,end_date=None):
+    def crawl_index_sw(self,begin_date=None,end_date=None,level='L3'):
         """
         获取申万指数
         """
-        index_codes = self.get_sw_list()        
+        
+        index_codes = self.get_sw_list(level)  
+        print(index_codes)      
         # 当前日期
         now = datetime.now().strftime('%Y%m%d')
         # 如果没有指定开始，则默认为当前日期
@@ -248,7 +250,7 @@ class Crawler(DailyCrawler):
         # 如果没有指定结束日，则默认为当前日期
         if end_date is None:
             end_date = now
-        level = self.level 
+        
         if level == 'L1':
             # 按照指数的代码循环，抓取所有指数信息
             for code in index_codes:
@@ -283,6 +285,9 @@ if __name__ == '__main__':
     # crawl.crawl_index('20140101','20210820')
     # crawl.crawl('20210826','20210826')
     # crawl.crawl_etf('20140101','20210820')
-    c = Crawler(level='L3')
-    c.crawl_index_sw('20211129','20211129')
+    c = Crawler()
+    # l = ['L1','L2','L3']
+    
+    c.crawl_index_sw('20211127','20211128',level='L2')
+    
     # print(c.get_sw_list())
