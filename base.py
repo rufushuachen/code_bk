@@ -11,6 +11,6 @@ DB_CONN = MongoClient('mongodb://127.0.0.1:27017')['quant_01']
 
 def ts_pro():
     import tushare as ts 
-    token='84c17c550c7e71523a11cee789600d34641a3660dacc22741c734caf'
+    token='your token key'
     pro=ts.pro_api(token)
     return pro
