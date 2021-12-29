@@ -103,7 +103,7 @@ class Crawl_basic(object):
           
 if __name__ == '__main__':
     cb = Crawl_basic()
-    cb.crawl_basic('20211101', '20211101')
+    cb.crawl_basic('20181115','20211220')
 
         
     

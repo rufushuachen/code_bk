@@ -10,6 +10,7 @@ from time import sleep
 from pymongo import errors
 import pandas as pd 
 from abc import ABCMeta, abstractmethod
+import json 
 
 """
 从tushare获取日K数据，保存到本地的MongoDB数据库中
@@ -24,7 +25,11 @@ class DailyCrawler(object):
         self.daily_sw1 = DB_CONN['daily_sw_1']
         self.daily_sw2 = DB_CONN['daily_sw_2']
         self.daily_sw3 = DB_CONN['daily_sw_3']
-        self.pro = ts_pro()
+        self.daily_ETF = DB_CONN['daily_ETF']
+        self.daily_index = DB_CONN['daily_index']
+        self.pro, self.pro_bar = ts_pro()
+        self.dic_list = []
+        
 
     @abstractmethod
     def crawl_index_sw(self):
@@ -53,8 +58,9 @@ class DailyCrawler(object):
         2. 回测时做为收益的对比基准
         :param begin_date: 开始日期
         :param end_date: 结束日期
-        """       
-        index_codes = ['000001.SH', '000300.SH'] 
+        """    
+        path = '/home/rufus/data_analysis/quant_02/final_index_code.txt'   
+        index_codes = list(self.read_file(path))
         # 当前日期
         now = datetime.now().strftime('%Y%m%d')
         # 如果没有指定开始，则默认为当前日期
@@ -71,18 +77,24 @@ class DailyCrawler(object):
             df_daily = self.get_daily(code,type='I',begin_date=begin_date,end_date=end_date)
             if (isinstance(df_daily,pd.DataFrame)) and (not df_daily.empty):
                 # 保存数据
-                self.save_data(code, df_daily, self.daily, {'index': True,'ETF':False})
+                self.save_data(code, df_daily, self.daily_index, {'index': True,'ETF':False})
             else:
                 print(code)
                 print('data is empty')
             
+    def read_file(self,path):
+        with open(path,'r',encoding='gbk') as f:
+            file_str = f.read()
+            dic = json.loads(file_str)
+            
+            return dic.values()
 
 
     def get_daily(self,code,type,begin_date,end_date,adj=None):
         for _ in range(3):
             try:
                 if code:
-                    df_daily = ts.pro_bar(ts_code=code, asset=type, start_date=begin_date, end_date=end_date,adj=adj)                     
+                    df_daily = self.pro_bar(ts_code=code, asset=type, start_date=begin_date, end_date=end_date,adj=adj)                     
                     
             except:
                 sleep(1)
@@ -154,7 +166,7 @@ class DailyCrawler(object):
         for etf in etf_list:                       
             df_daily = self.get_daily(etf,type='FD',begin_date=begin_date,end_date=end_date)
             if (isinstance(df_daily,pd.DataFrame)) and (not df_daily.empty):            
-                self.save_data(etf, df_daily, self.daily, {'index':False,'ETF':True})
+                self.save_data(etf, df_daily, self.daily_ETF, {'index':False,'ETF':True})
             else:
                 print(etf)
                 print('data is empty')
@@ -229,6 +241,7 @@ class Crawler(DailyCrawler):
             try:
                 df = self.pro.index_classify(level=level, src='SW2021')
                 index_codes = list(df.index_code)
+                print(index_codes)
             except:
                 sleep(1)
             else:
@@ -239,8 +252,9 @@ class Crawler(DailyCrawler):
         获取申万指数
         """
         
-        index_codes = self.get_sw_list(level)  
-        print(index_codes)      
+        index_codes = self.get_sw_list(level)
+         
+             
         # 当前日期
         now = datetime.now().strftime('%Y%m%d')
         # 如果没有指定开始，则默认为当前日期
@@ -256,6 +270,7 @@ class Crawler(DailyCrawler):
             for code in index_codes:
                 # 抓取一个指数的在时间区间的数据
                 df_daily = self.get_daily_sw(code,begin_date=begin_date,end_date=end_date)
+                
                 # 保存数据
                 if (isinstance(df_daily,pd.DataFrame)) and not (df_daily.empty):
                     self.save_data(code, df_daily, self.daily_sw1, {'index': True,'ETF':False})
@@ -263,7 +278,7 @@ class Crawler(DailyCrawler):
              # 按照指数的代码循环，抓取所有指数信息
             for code in index_codes:
                 # 抓取一个指数的在时间区间的数据
-                df_daily = self.get_daily_sw(code,begin_date=begin_date,end_date=end_date)
+                df_daily = self.get_daily_sw(code,begin_date=begin_date,end_date=end_date)                
                 # 保存数据
                 if (isinstance(df_daily,pd.DataFrame)) and not (df_daily.empty):
                     self.save_data(code, df_daily, self.daily_sw2, {'index': True,'ETF':False})             
@@ -279,15 +294,16 @@ class Crawler(DailyCrawler):
 
 
 
-if __name__ == '__main__':
-    # crawl =  DailyCrawler()
-    # crawl.crawl_index_sw('20140101','20210820')
-    # crawl.crawl_index('20140101','20210820')
-    # crawl.crawl('20210826','20210826')
-    # crawl.crawl_etf('20140101','20210820')
+if __name__ == '__main__':   
     c = Crawler()
-    # l = ['L1','L2','L3']
+    l = ['L1','L2','L3']
+    for i in l:
+        c.crawl_index_sw('20181115','20211220',level=i)
+    c.crawl_etf('20181115','20211220')
+    c.crawl_index('20181115','20211220')
+    c.crawl('20181115','20211220')
     
-    c.crawl_index_sw('20211127','20211128',level='L2')
     
-    # print(c.get_sw_list())
+    
+    
+    
