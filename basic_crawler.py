@@ -14,7 +14,7 @@ from base import DB_CONN,ts_pro
 """
 class Crawl_basic(object):
     def __init__(self):
-        self.pro = ts_pro()
+        self.pro, self.pro_bar = ts_pro()
         
 
     def crawl_basic(self,begin_date=None, end_date=None):
@@ -44,6 +44,7 @@ class Crawl_basic(object):
                 self.crawl_basic_at_date(date)
             except:
                 print('抓取股票基本信息时出错，日期：%s' % date, flush=True)
+        return all_dates 
 
     def crawl_basic_at_date(self,date):
         """

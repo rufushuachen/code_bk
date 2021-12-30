@@ -38,6 +38,9 @@ def crawl_daily():
         c.crawl_etf(begin_date=now, end_date=now) #抓取当日ETF行情信息
         c.crawl_index(begin_date=now, end_date=now) #抓取当日指数行情信息
         c.crawl(begin_date=now, end_date=now) #抓取当日股票行情信息
+        #周五降一周的数据转存为csv文件，并将日线数据降频成为周线数据，并存为csv文件
+        # if weekday == 5:
+
 
 
 # 定时任务的启动入口

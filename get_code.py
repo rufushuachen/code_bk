@@ -4,7 +4,7 @@ import numpy as np
 from datetime import datetime,timedelta
 from abc import ABCMeta, abstractmethod
 
-def get_code(date):
+def get_filt_code(date):
     #date = (datetime.now() + timedelta(days=-3)).strftime('%Y%m%d') #当前日期的前一天，转为字符串 
     pro = ts.pro_api()
     data = pd.DataFrame()   
@@ -38,5 +38,5 @@ def get_code(date):
 #         print(dict(zip(name,code)))
     return dict(zip(name,code))
 if __name__ == '__main__':
-    print(get_code('20211227'))
+    print(get_filt_code('20211227'))
     
