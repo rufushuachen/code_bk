@@ -10,6 +10,7 @@ class Daily2WeekData(object):
     """
     def __init__(self,file_list):
         self.file_list = file_list
+        print(self.file_list)
         self.df = pd.DataFrame()
         self.codes = list()
         self.get_data_accu()
@@ -24,7 +25,7 @@ class Daily2WeekData(object):
             df = pd.read_csv(i)
             df_list.append(df)
         df = pd.concat(df_list,axis=0)
-        cols = ['date','code','open','high','low','close','pct_chg','vol']
+        cols = ['date','code','open','high','low','close','vol']
         df = df[cols].copy()
        
         df['date'] = df['date'].astype('str')  #把日期转为字符串格式
@@ -51,10 +52,10 @@ class Daily2WeekData(object):
         for code in self.codes:
             df_t = self.df[self.df['code']==code]
             df_bar = df_t.resample('W',label='left', closed='right').agg({'close':['max', 'min', 'mean', 'first', 'last'],
-                                                                'pct_chg':['max', 'min', 'mean', 'first', 'last'],'vol':['sum']
+                                                                'vol':['sum']
                                                      }                                 
                                                    ).ffill()
-            cols = [('close','max'),('close','first'),('close','min'),('close','last'),('vol','sum'),('pct_chg','last')]
+            cols = [('close','max'),('close','first'),('close','min'),('close','last'),('vol','sum')]
             df_bar = df_bar[cols]
             df_bar.columns = ['_'.join(col) for col in df_bar.columns.values]
             df_bar['code'] = code
@@ -68,11 +69,10 @@ class Daily2WeekData(object):
 if __name__ == '__main__': 
     # d = Daily2WeekData(['D:\E-BOOK\daily_stock.csv'])  
     
-    file_list = ['/home/rufus/quant/data/index/daily_index.csv']
-    # file_path = ['weekly_index.csv','weekly_sw_1.csv','weekly_sw_2.csv','weekly_sw_3.csv']
-    file_path = 'weekly_index.csv'   
+    file_list = ['/home/rufus/quant/data/index/daily_sw_3.csv']
+    file_path = 'weekly_sw_3.csv'
     
-
+ 
     d = Daily2WeekData(file_list)
     d.get_data_accu() 
     d.daily2week(file_path)
