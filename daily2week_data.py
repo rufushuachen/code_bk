@@ -1,7 +1,8 @@
 import pandas as pd 
 import numpy as np 
 import re 
-
+from datetime import datetime as dt,timedelta
+import os 
 
 class Daily2WeekData(object):
     """
@@ -17,14 +18,14 @@ class Daily2WeekData(object):
 
 
     def get_data_accu(self):
-        #拼接每天的增量数据
+        #拼接每周的增量数据
         df_list = []
         
         for i in self.file_list:
             df = pd.read_csv(i)
             df_list.append(df)
         df = pd.concat(df_list,axis=0)
-        cols = ['date','code','open','high','low','close','pct_chg','vol']
+        cols = ['date','code','open','high','low','close','pct_chg','vol','amount']
         df = df[cols].copy()
        
         df['date'] = df['date'].astype('str')  #把日期转为字符串格式
@@ -47,36 +48,38 @@ class Daily2WeekData(object):
         # return re.sub(r"(\d{4})(\d{2})(\d{2})", date_str[-8:-4]+'-'+date_str[-4:-2]+'-'+date_str[-2:], date_str, 0, re.IGNORECASE)
 
     def daily2week(self,path):
+        #把累计每周的日线数据降频为周线数据
+        
         df_bar_list = list()
         for code in self.codes:
             df_t = self.df[self.df['code']==code]
             df_bar = df_t.resample('W',label='left', closed='right').agg({'close':['max', 'min', 'mean', 'first', 'last'],
-                                                                'pct_chg':['max', 'min', 'mean', 'first', 'last'],'vol':['sum']
+                                                                'pct_chg':['max', 'min', 'mean', 'first', 'last'],'vol':['sum'],'amount':['sum']
                                                      }                                 
                                                    ).ffill()
-            cols = [('close','max'),('close','first'),('close','min'),('close','last'),('vol','sum'),('pct_chg','last')]
+            cols = [('close','max'),('close','first'),('close','min'),('close','last'),('vol','sum'),('amount','sum'),('pct_chg','last')]
             df_bar = df_bar[cols]
             df_bar.columns = ['_'.join(col) for col in df_bar.columns.values]
             df_bar['code'] = code
             df_bar_list.append(df_bar)
         df = pd.concat(df_bar_list,axis=0)
         codes = list(df['code'].unique())
-        df.to_csv('/home/rufus/quant/data/index/' + path)
+        df.to_csv('/home/rufus/quant/data/index_weekly/' + path) #把周线数据存到指定的目录
 
         return codes,df
 
 if __name__ == '__main__': 
-    # d = Daily2WeekData(['D:\E-BOOK\daily_stock.csv'])  
+     
     
-    file_list = ['/home/rufus/quant/data/index/daily_index.csv']
-    # file_path = ['weekly_index.csv','weekly_sw_1.csv','weekly_sw_2.csv','weekly_sw_3.csv']
-    file_path = 'weekly_index.csv'   
+    # file_list = ['/home/rufus/quant/data/index/daily_index.csv']
+    file_list =  os.listdir('/home/rufus/quant/data/index') #获取文件列表
+    file_l = ['/home/rufus/quant/data/index/' + i for i in file_list]
+    
+    now_date = dt.now().strftime('%Y%m%d')
+    file_path = 'weekly_index_'+ now_date +'.csv'   #拼接文件名
     
 
-    d = Daily2WeekData(file_list)
+    d = Daily2WeekData(file_l)
     d.get_data_accu() 
     d.daily2week(file_path)
-    # codes,df = d.get_data_accu()
-    # codes,df =d.daily2week()
-    # print(df.tail())
-    # d.daily2week()  
+   
