@@ -26,6 +26,7 @@ class DailyCrawler(object):
         self.daily_sw2 = DB_CONN['daily_sw_2']
         self.daily_sw3 = DB_CONN['daily_sw_3']
         self.daily_ETF = DB_CONN['daily_ETF']
+        self.daily_ETF_hfq = DB_CONN['daily_ETF_hfq']
         self.daily_index = DB_CONN['daily_index']
         self.pro, self.pro_bar = ts_pro()
         self.dic_list = []
@@ -170,7 +171,49 @@ class DailyCrawler(object):
             else:
                 print(etf)
                 print('data is empty')
-            
+
+    def crawl_fund_adj(self,code,begin_date=None,end_date=None):
+        """
+        抓取复权因子
+        """
+        for _ in range(3):
+            try:
+                if code:
+                    print(code)
+                    df_adj = self.pro.fund_adj(ts_code=code,start_date=begin_date, end_date=end_date)                  
+                    
+            except:
+                sleep(1)
+            else:
+                return df_adj 
+    def crawl_etf_hfq(self,begin_date=None,end_date=None):
+        """
+        拼接数据框，计算后复权收盘价
+        把计算结果存入mongodb
+        """
+        etf_list = self.get_etf_list()
+        # 当前日期
+        now = datetime.now().strftime('%Y%m%d')
+        # 如果没有指定开始日期，则默认为当前日期
+        if begin_date is None:
+            begin_date = now
+
+        # 如果没有指定结束日期，则默认为当前日期
+        if end_date is None:
+            end_date = now
+        for etf in etf_list: 
+            df_adj = self.crawl_fund_adj(etf,begin_date=begin_date,end_date=end_date)
+            df_adj = df_adj.drop('ts_code',axis=1).copy()
+            df_daily = self.get_daily(etf,type='FD',begin_date=begin_date,end_date=end_date) 
+            df = df_daily.merge(df_adj,how='left',on='trade_date')
+            df['close_hfq'] = df['close'] * df['adj_factor']
+            if (isinstance(df,pd.DataFrame)) and (not df.empty): 
+                 self.save_data(etf, df, self.daily_ETF_hfq, {'index':False,'ETF':True})
+            else:
+                print(etf)
+                print('data is empty')  
+
+    
        
     def get_etf_list(self):
         for _ in range(3):
@@ -296,12 +339,17 @@ class Crawler(DailyCrawler):
 
 if __name__ == '__main__':   
     c = Crawler()
-    l = ['L1','L2','L3']
-    for i in l:
-        c.crawl_index_sw('20181115','20211220',level=i)
-    c.crawl_etf('20181115','20211220')
-    c.crawl_index('20181115','20211220')
-    c.crawl('20181115','20211220')
+    # l = ['L1','L2','L3']
+    # for i in l:
+    #     c.crawl_index_sw('20181115','20211220',level=i)
+    # c.crawl_etf('20181115','20211220')
+    c.crawl_etf_hfq('20181115','20220112')
+    # c.crawl_index('20181115','20211220')
+    # c.crawl('20181115','20211220')
+
+
+    
+    
     
     
     
