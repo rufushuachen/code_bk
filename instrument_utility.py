@@ -201,7 +201,20 @@ class InstrumentUtility(object):
                 res = df[df.name.str.contains('ETF')]
                 codes = list(res.ts_code) 
                 names = list(res.name)               
-                return   codes,names               
+                return   codes,names
+    
+    def get_ETF_names(self):
+                
+        for _ in range(3):
+            try:                
+                df = self.pro.fund_basic(market='E',status='L') #获取上市中的ETF                      
+            except:
+                sleep(1)
+            else:
+                res = df[df.name.str.contains('ETF')]
+                codes = list(res.ts_code) 
+                names = list(res.name)               
+                return   dict(zip(codes,names))
 
     def get_ETF_scale(self):
         """
@@ -251,9 +264,10 @@ class InstrumentUtility(object):
         df_res.sort_values('date',ascending=True,inplace=True)
         return df_res,names_dict
 
-    def get_ETF_SHARP(self):
+    def get_ETF_SHARP(self,m=1.0):
         """
         根据筛选后的周线行情数据，计算资产的年化回报，波动率，sharp ratio
+        返回sharp ratio大于阈值的资产代码
 
         """
         df, names_dict= self.get_ETF_filt()
@@ -272,7 +286,7 @@ class InstrumentUtility(object):
 
         res = pd.DataFrame(item_list)
         res.sort_values('sharp',ascending=False,inplace=True)
-        fil = res['sharp'] > 1.0
+        fil = res['sharp'] > m
         res = res[fil].copy()
         res['name'] = [ names_dict[i] for i in res['code']]
         return list(res['code']),list(res['name']),res 
@@ -320,15 +334,16 @@ class InstrumentUtility(object):
         df['fee'] = df['fee'].astype('float')
         return df
 
-    def get_ETF_codes(self,w=1,m=0,n=30):
+    def get_ETF_codes(self,w=1,m=30,n=60):
         """
         1.拿到符合条件的指数代码(根据中位数排序)
         2.获取对应的ETF资产的DataFrame
         3.根据指数代码，获取对应的ETF资产代码(ETF资产跟踪对应的指数)
         4.去除ETF资产代码中非数字的字符
         5.参数w表示计算多长时间的收益率
-        """  
-        codes = self.ret_df(w)[m:n] #选取排名靠前的66个指数
+        """ 
+        p3 =  round(len(self.ret_df(w)) * 0.75)
+        codes = self.ret_df(w)[p3:] #选取排名靠前的33个指数
         df = self.get_ETF_code_df()
         codes_list = list()
         names_list = list()
@@ -345,7 +360,7 @@ class InstrumentUtility(object):
         """
         1.获取根据指数中位数排序后对应的ETF资产代码
         2.根据ETF资产代码，获取对应的上市时间、管理费、托管费、资产规模等信息
-        3.返回DataFrame        
+        3.返回股票代码、股票名称       
         """
         codes,names = self.get_ETF_codes(1) #参数1，表示计算一周的收益率
         codes_dict = dict(zip(codes,names))
@@ -400,7 +415,8 @@ if __name__ == '__main__':
    
     # print(dict(zip(codes,names)))
     
-    codes = i.get_ETF_share()
-    print(len(codes))
+    codes = i.ret_df(1)
+    p3 =  round(len(codes) * 0.75)
+    print(p3)
     
   
